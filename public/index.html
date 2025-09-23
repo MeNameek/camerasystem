@@ -1,34 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Camera System</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="container">
-    <h1>Camera System</h1>
+  <div class="app">
+    <header>
+      <h1>Camera Control</h1>
+    </header>
 
-    <div id="setup">
-      <input id="userName" class="input" placeholder="Enter your name">
-      <button id="createBtn" class="btn">Create Lobby (PC)</button>
-      <input id="joinCode" class="input" placeholder="Enter Lobby Code (Phone)">
-      <button id="joinBtn" class="btn">Join as Camera</button>
-      <button id="flipBtn" class="btn">Flip Camera</button>
-    </div>
+    <section class="controls">
+      <input id="userName" class="input" placeholder="Your name" />
+      <button id="createBtn" class="btn primary">Create Lobby (host)</button>
 
-    <p id="roomDisplay" class="room"></p>
+      <div class="join-row">
+        <input id="joinCode" class="input" placeholder="Lobby code" />
+        <button id="joinBtn" class="btn">Join as Camera</button>
+      </div>
 
-    <div class="user-list-container">
-      <p>Connected Cameras:</p>
-      <div id="userList" class="user-list"></div>
-    </div>
+      <div class="small-controls">
+        <button id="flipBtn" class="btn">Flip Camera</button>
+        <button id="copyCodeBtn" class="btn">Copy Code</button>
+      </div>
 
-    <div class="video-container">
-      <video id="remoteVideo" autoplay playsinline></video>
-      <button id="fullscreenBtn" class="fullscreen-btn">Fullscreen</button>
-    </div>
+      <p id="roomDisplay" class="room"></p>
+    </section>
+
+    <section class="panel">
+      <div class="panel-left">
+        <h3>Connected Cameras</h3>
+        <div id="userList" class="camera-grid"></div>
+      </div>
+
+      <div class="panel-right">
+        <div class="video-wrap">
+          <video id="remoteVideo" autoplay playsinline></video>
+          <div id="camLabel" class="cam-label">No camera selected</div>
+        </div>
+        <div class="video-actions">
+          <button id="prevBtn" class="btn">Prev</button>
+          <button id="nextBtn" class="btn">Next</button>
+          <button id="fullscreenBtn" class="btn primary">Fullscreen</button>
+        </div>
+      </div>
+    </section>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
