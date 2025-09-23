@@ -5,40 +5,48 @@ const { Server } = require("socket.io");
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
-
 app.use(express.static("public"));
 
-const rooms = {};
+const lobbies = {}; // {room: {host:socketId, cameras:{id:{name}}}}
 
 io.on("connection", socket => {
-  socket.on("join", ({ room, name, role }) => {
+  socket.on("create", room => {
+    lobbies[room] = { host: socket.id, cameras: {} };
     socket.join(room);
-    socket.data.room = room;
-    socket.data.name = name;
-    socket.data.role = role;
-
-    if (!rooms[room]) rooms[room] = [];
-    rooms[room].push({ id: socket.id, name, role });
-
-    updateUsers(room);
+    socket.emit("created", room);
   });
 
-  socket.on("signal", msg => {
-    if (msg.targetId) io.to(msg.targetId).emit("signal", { ...msg.data, from: socket.id });
-    else socket.to(socket.data.room).emit("signal", { ...msg.data, from: socket.id });
+  socket.on("join", ({ room, name }) => {
+    if (!lobbies[room]) return;
+    lobbies[room].cameras[socket.id] = { name };
+    socket.join(room);
+    io.to(lobbies[room].host).emit("cameraList", lobbies[room].cameras);
+  });
+
+  socket.on("offer", ({ room, offer }) => {
+    const host = lobbies[room]?.host;
+    if (host) io.to(host).emit("offer", { id: socket.id, offer });
+  });
+
+  socket.on("answer", ({ id, answer }) => {
+    io.to(id).emit("answer", answer);
+  });
+
+  socket.on("ice", ({ to, candidate }) => {
+    io.to(to).emit("ice", { from: socket.id, candidate });
   });
 
   socket.on("disconnect", () => {
-    const { room } = socket.data;
-    if (room && rooms[room]) {
-      rooms[room] = rooms[room].filter(u => u.id !== socket.id);
-      updateUsers(room);
+    for (const [room, lobby] of Object.entries(lobbies)) {
+      if (socket.id === lobby.host) {
+        io.to(room).emit("end");
+        delete lobbies[room];
+      } else if (lobby.cameras[socket.id]) {
+        delete lobby.cameras[socket.id];
+        io.to(lobby.host).emit("cameraList", lobby.cameras);
+      }
     }
   });
-
-  function updateUsers(room) {
-    io.to(room).emit("user-list", rooms[room]);
-  }
 });
 
 const PORT = process.env.PORT || 3000;

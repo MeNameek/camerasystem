@@ -1,166 +1,127 @@
 const socket = io();
-
 const createBtn = document.getElementById("createBtn");
 const joinBtn = document.getElementById("joinBtn");
-const joinCode = document.getElementById("joinCode");
-const roomDisplay = document.getElementById("roomDisplay");
-const userNameInput = document.getElementById("userName");
 const flipBtn = document.getElementById("flipBtn");
-const copyCodeBtn = document.getElementById("copyCodeBtn");
-
-const userList = document.getElementById("userList");
+const roomDisplay = document.getElementById("roomDisplay");
+const cameraListDiv = document.getElementById("cameraList");
 const remoteVideo = document.getElementById("remoteVideo");
 const camLabel = document.getElementById("camLabel");
 const fullscreenBtn = document.getElementById("fullscreenBtn");
 
-let room;
-let role;
+let room = null;
+let isHost = false;
+let useFront = false;
 let localStream;
-let useFrontCamera = true;
-let joined = false;
-let pc;
-let cameraStreams = {};
-let currentCameraId = null;
+let pcs = {};
+let currentCamera = null;
 
-// host UI
-function updateCameraList(users) {
-  userList.innerHTML = "";
-  users.forEach(u => {
-    if (u.role === "camera") {
-      const btn = document.createElement("button");
-      btn.textContent = u.name;
-      btn.onclick = () => switchCamera(u.id, u.name);
-      userList.appendChild(btn);
-    }
-  });
-}
+function randomRoom(){return Math.random().toString(36).substr(2,5).toUpperCase();}
 
-function switchCamera(id, name) {
-  if (cameraStreams[id]) {
-    remoteVideo.srcObject = cameraStreams[id];
-    camLabel.textContent = name;
-    currentCameraId = id;
-  }
-}
-
-function setRoomText(txt) {
-  roomDisplay.textContent = "Lobby: " + txt;
-}
-
-// Create lobby (host)
-createBtn.onclick = () => {
-  room = Math.random().toString(36).substring(2, 8).toUpperCase();
-  const name = (userNameInput.value || "Host").trim();
-  role = "host";
-  socket.emit("join", { room, name, role });
-  setRoomText(room);
-  joined = true;
+createBtn.onclick = ()=>{
+  room = randomRoom();
+  isHost = true;
+  socket.emit("create", room);
+  roomDisplay.textContent = "Lobby: " + room;
 };
 
-// Copy code
-copyCodeBtn.onclick = () => {
-  if (room) navigator.clipboard.writeText(room);
-};
+flipBtn.onclick = ()=>{ useFront = !useFront; };
 
-// Join as camera
-joinBtn.onclick = async () => {
-  if (joined) return;
-  role = "camera";
-  room = joinCode.value.trim();
-  if (!room) return alert("Enter lobby code");
-  const name = (userNameInput.value || "Camera").trim();
+joinBtn.onclick = async ()=>{
+  if (room) return;
+  const code = document.getElementById("joinCode").value.trim();
+  if (!code) return alert("Enter code");
+  room = code;
+  const name = document.getElementById("userName").value.trim() || "Camera";
 
   try {
     localStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: useFrontCamera ? "user" : "environment" },
-      audio: false
+      video:{facingMode: useFront ? "user" : "environment"},
+      audio:false
     });
-  } catch (err) {
-    alert("Camera permission denied. Enable camera and try again.");
+  } catch(e){
+    alert("Camera blocked");
     return;
   }
+  // keep camera alive right away
+  const keep = document.createElement("video");
+  keep.playsInline = true;
+  keep.muted = true;
+  keep.srcObject = localStream;
+  keep.style.display="none";
+  document.body.appendChild(keep);
+  keep.play().catch(()=>{});
 
-  // keep camera alive on iOS
-  const tempVideo = document.createElement("video");
-  tempVideo.style.display = "none";
-  tempVideo.playsInline = true;
-  tempVideo.muted = true;
-  tempVideo.srcObject = localStream;
-  document.body.appendChild(tempVideo);
-  tempVideo.play().catch(()=>{});
-
-  socket.emit("join", { room, name, role });
-  setRoomText(room);
-  joined = true;
+  socket.emit("join",{room,name});
   startCameraPeer();
 };
 
-// Flip camera
-flipBtn.onclick = async () => {
-  if (!localStream) return;
-  useFrontCamera = !useFrontCamera;
-  const newStream = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: useFrontCamera ? "user" : "environment" },
-    audio: false
-  });
-  const videoTrack = newStream.getVideoTracks()[0];
-  const sender = pc.getSenders().find(s => s.track.kind === "video");
-  sender.replaceTrack(videoTrack);
-  localStream = newStream;
-};
+socket.on("created", r=>{ room=r; });
 
-// Fullscreen
-fullscreenBtn.onclick = () => {
-  const app = document.getElementById("app");
-  if (app.requestFullscreen) app.requestFullscreen();
-};
-
-// Socket events
-socket.on("user-list", updateCameraList);
-
-socket.on("signal", async msg => {
-  if (role === "host") {
-    const { from, sdp, candidate } = msg;
-    if (!cameraStreams[from]) {
-      cameraStreams[from] = { pc: new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] }) };
-      const pcHost = cameraStreams[from].pc;
-
-      pcHost.onicecandidate = e => {
-        if (e.candidate) socket.emit("signal", { room, targetId: from, data: { candidate: e.candidate } });
-      };
-
-      pcHost.ontrack = e => {
-        cameraStreams[from] = e.streams[0];
-        if (!currentCameraId) switchCamera(from, "Camera");
-      };
-    }
-    const pcHost = cameraStreams[from].pc;
-    if (sdp) {
-      await pcHost.setRemoteDescription(new RTCSessionDescription(sdp));
-      const answer = await pcHost.createAnswer();
-      await pcHost.setLocalDescription(answer);
-      socket.emit("signal", { room, targetId: from, data: { sdp: pcHost.localDescription } });
-    } else if (candidate) {
-      await pcHost.addIceCandidate(new RTCIceCandidate(candidate));
-    }
+socket.on("cameraList", list=>{
+  cameraListDiv.innerHTML="";
+  for(const [id,info] of Object.entries(list)){
+    const btn=document.createElement("button");
+    btn.className="camera-btn";
+    btn.textContent=info.name;
+    btn.onclick=()=>showCamera(id,info.name);
+    cameraListDiv.appendChild(btn);
   }
 });
 
-// Camera peer logic
-async function startCameraPeer() {
-  pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
-  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-
-  pc.onicecandidate = e => {
-    if (e.candidate) socket.emit("signal", { room, data: { candidate: e.candidate } });
+socket.on("offer", async ({id,offer})=>{
+  const pc=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"}]});
+  pcs[id]=pc;
+  pc.onicecandidate=e=>{if(e.candidate)socket.emit("ice",{to:id,candidate:e.candidate});};
+  pc.ontrack=e=>{
+    if(currentCamera===id){
+      remoteVideo.srcObject = e.streams[0];
+    }
   };
+  await pc.setRemoteDescription(new RTCSessionDescription(offer));
+  const answer = await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+  socket.emit("answer",{id,answer});
+});
 
+socket.on("answer", async answer=>{
+  const pc = pcs[socket.id];
+  if(pc) await pc.setRemoteDescription(new RTCSessionDescription(answer));
+});
+
+socket.on("ice", async ({from,candidate})=>{
+  const pc = pcs[from] || pcs[socket.id];
+  if(pc) await pc.addIceCandidate(new RTCIceCandidate(candidate));
+});
+
+socket.on("end", ()=>{
+  alert("Host left");
+  location.reload();
+});
+
+function showCamera(id,name){
+  currentCamera = id;
+  camLabel.textContent = name;
+  const pc = pcs[id];
+  if(pc){
+    const stream = new MediaStream();
+    pc.getReceivers().forEach(r=>{if(r.track)stream.addTrack(r.track);});
+    remoteVideo.srcObject = stream;
+  }
+}
+
+fullscreenBtn.onclick=()=>{
+  if(!document.fullscreenElement) document.documentElement.requestFullscreen();
+  else document.exitFullscreen();
+};
+
+async function startCameraPeer(){
+  const pc=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"}]});
+  pcs[socket.id]=pc;
+  localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
+  pc.onicecandidate=e=>{
+    if(e.candidate) socket.emit("ice",{to:null,candidate:e.candidate});
+  };
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
-  socket.emit("signal", { room, data: { sdp: pc.localDescription } });
-
-  socket.on("signal", async msg => {
-    if (msg.sdp) await pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
-    else if (msg.candidate) await pc.addIceCandidate(new RTCIceCandidate(msg.candidate));
-  });
+  socket.emit("offer",{room,offer});
 }
