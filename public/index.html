@@ -1,23 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Camera Control</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
   <div id="app" class="app">
-    <header>
+    <header id="header">
       <h1>Camera Control</h1>
     </header>
 
-    <section class="controls">
-      <input id="userName" class="input" placeholder="Your name" />
+    <section id="controls" class="controls">
+      <input id="userName" class="input" placeholder="Your name"/>
       <button id="createBtn" class="btn primary">Create Lobby (host)</button>
 
       <div class="join-row">
-        <input id="joinCode" class="input" placeholder="Lobby code" />
+        <input id="joinCode" class="input" placeholder="Lobby code"/>
         <button id="joinBtn" class="btn">Join as Camera</button>
       </div>
 
@@ -31,13 +31,13 @@
 
     <section class="panel">
       <div class="panel-left">
-        <h3>Connected Cameras</h3>
+        <h3 id="cameraHeader">Connected Cameras</h3>
         <div id="userList" class="camera-grid"></div>
       </div>
 
       <div class="panel-right">
         <div class="video-wrap">
-          <video id="remoteVideo" autoplay playsinline></video>
+          <video id="remoteVideo" autoplay playsinline muted></video>
           <div id="camLabel" class="cam-label">No camera selected</div>
         </div>
         <div class="video-actions">
