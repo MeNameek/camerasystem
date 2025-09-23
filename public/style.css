@@ -152,3 +152,36 @@ video{ width:100%; height:100%; object-fit:cover; display:block; background:#000
   gap:10px;
   justify-content:flex-end;
 }
+
+/* FNAF-style fullscreen panel */
+body.fullscreen {
+  overflow: hidden;
+}
+
+.panel.fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 0;
+  z-index: 9999;
+  background: var(--bg);
+}
+
+.panel.fullscreen .panel-left {
+  height: 100%;
+  overflow-y: auto;
+}
+
+.panel.fullscreen .panel-right {
+  height: 100%;
+}
+
+.panel.fullscreen video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}

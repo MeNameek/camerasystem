@@ -42,11 +42,11 @@ copyCodeBtn.onclick = () => {
   navigator.clipboard?.writeText(room).then(()=>{}, ()=>{});
 };
 
-// fullscreen
+// fullscreen toggle FNAF-style
 fullscreenBtn.onclick = () => {
-  if (remoteVideo.requestFullscreen) remoteVideo.requestFullscreen();
-  else if (remoteVideo.webkitRequestFullscreen) remoteVideo.webkitRequestFullscreen();
-  else if (remoteVideo.msRequestFullscreen) remoteVideo.msRequestFullscreen();
+  const panel = document.querySelector(".panel");
+  panel.classList.toggle("fullscreen");
+  document.body.classList.toggle("fullscreen");
 };
 
 // prev / next camera
@@ -77,7 +77,6 @@ flipBtn.onclick = async () => {
     const newTrack = newStream.getVideoTracks()[0];
     const sender = cameraPc.getSenders().find(s => s.track && s.track.kind === "video");
     if (sender) await sender.replaceTrack(newTrack);
-    // stop old video tracks and update localStream
     localStream.getVideoTracks().forEach(t => t.stop());
     localStream = newStream;
   } catch (err) {
@@ -125,75 +124,51 @@ async function startCameraPeer() {
     }
   };
 
-  // add tracks
   localStream.getTracks().forEach(track => cameraPc.addTrack(track, localStream));
 
   const offer = await cameraPc.createOffer();
   await cameraPc.setLocalDescription(offer);
-  // send offer to room; server will forward to host(s)
   socket.emit("signal", { room, sdp: cameraPc.localDescription, candidate: null });
 }
 
 // socket user-list update
 socket.on("user-list", users => {
-  // update camera list panel on any client. host will show buttons for cameras.
   renderUserList(users || []);
 });
 
-// socket signal handler (both sides)
+// socket signal handler
 socket.on("signal", async message => {
-  // message contains either sdp or candidate and message.from (sender socket id)
   const fromId = message.from;
   if (!fromId) return;
 
-  // CAMERA role: expect answers and candidates from host
   if (isCamera()) {
-    if (!cameraPc) {
-      // no local pc yet. buffer candidate if any
-      return;
-    }
+    if (!cameraPc) return;
     if (message.sdp) {
-      // host answer
-      try {
-        await cameraPc.setRemoteDescription(new RTCSessionDescription(message.sdp));
-      } catch (err) {
-        console.error("camera setRemote failed", err);
-      }
+      try { await cameraPc.setRemoteDescription(new RTCSessionDescription(message.sdp)); }
+      catch (err) { console.error("camera setRemote failed", err); }
     }
     if (message.candidate) {
-      try {
-        await cameraPc.addIceCandidate(new RTCIceCandidate(message.candidate));
-      } catch (err) {
-        console.error("camera addIceCandidate", err);
-      }
+      try { await cameraPc.addIceCandidate(new RTCIceCandidate(message.candidate)); }
+      catch (err) { console.error("camera addIceCandidate", err); }
     }
     return;
   }
 
-  // HOST role: host receives offers and candidates from cameras
   if (isHost()) {
     const cameraId = fromId;
-    // ensure pc exists
     if (!hostPcs[cameraId]) createHostPc(cameraId);
-
     const pc = hostPcs[cameraId];
 
     if (message.sdp) {
       try {
         await pc.setRemoteDescription(new RTCSessionDescription(message.sdp));
-        // create answer
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
-        // send answer back only to this camera
         socket.emit("signal", { room, target: cameraId, sdp: pc.localDescription, candidate: null });
-      } catch (err) {
-        console.error("host handle sdp failed", err);
-      }
+      } catch (err) { console.error("host handle sdp failed", err); }
     } else if (message.candidate) {
-      try {
-        await pc.addIceCandidate(new RTCIceCandidate(message.candidate));
-      } catch (err) {
-        // if pc not ready, queue it
+      try { await pc.addIceCandidate(new RTCIceCandidate(message.candidate)); }
+      catch (err) {
         if (!candidateQueues[cameraId]) candidateQueues[cameraId] = [];
         candidateQueues[cameraId].push(message.candidate);
       }
@@ -212,14 +187,9 @@ function createHostPc(cameraId) {
   };
 
   pc.ontrack = e => {
-    // store the remote stream for switching
     hostStreams[cameraId] = e.streams[0];
-    // if not selected, auto select the first connected camera
-    if (!currentCameraId) {
-      switchToCamera(cameraId);
-    }
-    // drain queue if present
-    if (candidateQueues[cameraId] && candidateQueues[cameraId].length) {
+    if (!currentCameraId) switchToCamera(cameraId);
+    if (candidateQueues[cameraId]?.length) {
       candidateQueues[cameraId].forEach(async c => {
         try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch (err) {}
       });
@@ -233,7 +203,6 @@ function createHostPc(cameraId) {
 
 // render user list and camera buttons
 function renderUserList(users) {
-  // show only cameras for host
   userList.innerHTML = "";
   cameraOrder = [];
   users.forEach(u => {
@@ -245,22 +214,18 @@ function renderUserList(users) {
                        <div class="camera-id">${u.id.slice(0,6)}</div>`;
       btn.onclick = () => {
         switchToCamera(u.id);
-        // update index
         cameraIndex = cameraOrder.indexOf(u.id);
       };
       userList.appendChild(btn);
       cameraOrder.push(u.id);
     }
   });
-
-  // update active highlight
   updateActiveButtons();
 }
 
 // switch host view to camera id
 function switchToCamera(cameraId) {
   if (!hostStreams[cameraId]) {
-    // if pc exists but stream not yet arrived, still create pc (if not) and wait
     if (!hostPcs[cameraId]) createHostPc(cameraId);
     currentCameraId = cameraId;
     camLabel.textContent = "Connecting to " + cameraId.slice(0,6);
@@ -269,7 +234,6 @@ function switchToCamera(cameraId) {
   }
   remoteVideo.srcObject = hostStreams[cameraId];
   currentCameraId = cameraId;
-  // set camera label to name from user list UI
   const btn = [...userList.children].find(n => n.dataset.id === cameraId);
   camLabel.textContent = btn ? btn.querySelector(".camera-name").textContent : "Camera " + cameraId.slice(0,6);
   updateActiveButtons();
