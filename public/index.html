@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Camera Lobby</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Camera Lobby</h1>
+
+  <div id="setup">
+    <button id="createBtn">Create Lobby</button>
+    <input id="joinCode" placeholder="Enter code">
+    <button id="joinBtn">Join as Camera</button>
+  </div>
+
+  <p id="roomDisplay"></p>
+  <video id="remoteVideo" autoplay playsinline></video>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="client.js"></script>
+</body>
+</html>

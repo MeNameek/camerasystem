@@ -1,0 +1,15 @@
+body {
+  background: #111;
+  color: #eee;
+  text-align: center;
+  font-family: sans-serif;
+}
+button, input {
+  margin: 10px;
+  padding: 10px;
+}
+video {
+  width: 80%;
+  margin-top: 20px;
+  background: #000;
+}
