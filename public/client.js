@@ -17,7 +17,7 @@ fullscreenBtn.onclick = () => {
   else if (remoteVideo.msRequestFullscreen) remoteVideo.msRequestFullscreen();
 };
 
-// Create Lobby (Host)
+// Host (PC) creates lobby
 createBtn.onclick = () => {
   room = Math.random().toString(36).substring(2, 8).toUpperCase();
   roomDisplay.textContent = "Lobby Code: " + room;
@@ -25,7 +25,7 @@ createBtn.onclick = () => {
   startHost();
 };
 
-// Join as Camera
+// Camera (Phone) joins
 joinBtn.onclick = async () => {
   room = joinCode.value.trim();
   if (!room) return;
@@ -34,7 +34,7 @@ joinBtn.onclick = async () => {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
     localVideo.srcObject = stream;
-    localVideo.style.display = "block"; // show small preview on device
+    localVideo.style.display = "block"; // small preview
     startCamera(stream);
   } catch (err) {
     alert("Camera access denied or failed: " + err.message);
@@ -42,13 +42,15 @@ joinBtn.onclick = async () => {
   }
 };
 
-// Peer connection setup
+// Create peer connection
 function createPeerConnection() {
   const config = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
   pc = new RTCPeerConnection(config);
+
   pc.onicecandidate = e => {
     if (e.candidate) socket.emit("signal", { room, data: { candidate: e.candidate } });
   };
+
   pc.ontrack = e => {
     remoteVideo.srcObject = e.streams[0];
   };
@@ -73,9 +75,11 @@ function startHost() {
 async function startCamera(stream) {
   createPeerConnection();
   stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
   socket.emit("signal", { room, data: { sdp: pc.localDescription } });
+
   socket.on("signal", async data => {
     if (data.sdp) await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
     else if (data.candidate) await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
