@@ -17,14 +17,14 @@ io.on("connection", socket => {
     if (!rooms[room]) rooms[room] = [];
     rooms[room].push({ id: socket.id, name });
     io.to(room).emit("user-list", rooms[room]);
+    // Notify host about new peer
     socket.to(room).emit("peer-joined", { id: socket.id, name });
   });
 
-  socket.on("signal", ({ room, target, data }) => {
+  // signaling
+  socket.on("signal", ({ target, data }) => {
     if (target) {
-      io.to(target).emit("signal", data);
-    } else {
-      socket.to(room).emit("signal", data);
+      io.to(target).emit("signal", { from: socket.id, data });
     }
   });
 
