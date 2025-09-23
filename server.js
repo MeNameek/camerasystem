@@ -20,8 +20,12 @@ io.on("connection", socket => {
     socket.to(room).emit("peer-joined", { id: socket.id, name });
   });
 
-  socket.on("signal", ({ room, data }) => {
-    socket.to(room).emit("signal", data);
+  socket.on("signal", ({ room, target, data }) => {
+    if (target) {
+      io.to(target).emit("signal", data);
+    } else {
+      socket.to(room).emit("signal", data);
+    }
   });
 
   socket.on("disconnecting", () => {

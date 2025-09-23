@@ -8,20 +8,22 @@ const fullscreenBtn = document.getElementById("fullscreenBtn");
 const flipBtn = document.getElementById("flipBtn");
 const userNameInput = document.getElementById("userName");
 const userList = document.getElementById("userList");
+const cameraButtonsContainer = document.getElementById("cameraButtons");
 
-let pc;
+let pcs = {}; // userId: RTCPeerConnection
+let streams = {}; // userId: MediaStream
 let room;
 let stream;
 let useFrontCamera = true;
 
-// Fullscreen button
+// Fullscreen
 fullscreenBtn.onclick = () => {
   if (remoteVideo.requestFullscreen) remoteVideo.requestFullscreen();
   else if (remoteVideo.webkitRequestFullscreen) remoteVideo.webkitRequestFullscreen();
   else if (remoteVideo.msRequestFullscreen) remoteVideo.msRequestFullscreen();
 };
 
-// Flip camera button
+// Flip camera
 flipBtn.onclick = async () => {
   if (!stream) return;
   useFrontCamera = !useFrontCamera;
@@ -30,12 +32,12 @@ flipBtn.onclick = async () => {
     audio: false
   });
   const videoTrack = newStream.getVideoTracks()[0];
-  const sender = pc.getSenders().find(s => s.track.kind === "video");
+  const sender = pcs["local"].getSenders().find(s => s.track.kind === "video");
   sender.replaceTrack(videoTrack);
   stream = newStream;
 };
 
-// Create Lobby (PC)
+// Create lobby (PC host)
 createBtn.onclick = () => {
   room = Math.random().toString(36).substring(2, 8).toUpperCase();
   roomDisplay.textContent = "Lobby Code: " + room;
@@ -44,7 +46,7 @@ createBtn.onclick = () => {
   startHost();
 };
 
-// Join as Camera (Mobile)
+// Join as camera (mobile)
 joinBtn.onclick = async () => {
   room = joinCode.value.trim();
   if (!room) return;
@@ -52,7 +54,10 @@ joinBtn.onclick = async () => {
   const name = userNameInput.value.trim() || "Camera";
   socket.emit("join", { room, name });
   try {
-    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: useFrontCamera ? "user" : "environment" }, audio: false });
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: useFrontCamera ? "user" : "environment" },
+      audio: false
+    });
     startCamera(stream);
   } catch (err) {
     alert("Camera access denied or failed: " + err.message);
@@ -60,7 +65,7 @@ joinBtn.onclick = async () => {
   }
 };
 
-// Update user list on host
+// Update user list
 socket.on("user-list", users => {
   userList.innerHTML = "";
   users.forEach(u => {
@@ -70,39 +75,54 @@ socket.on("user-list", users => {
   });
 });
 
-// Create peer connection
-function createPeerConnection() {
-  const config = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
-  pc = new RTCPeerConnection(config);
+// Host: new camera joined
+socket.on("peer-joined", ({ id, name }) => {
+  startHostPeer(id, name);
+});
+
+// Function to start host for a new camera
+function startHostPeer(id, name) {
+  const pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
+  pcs[id] = pc;
+
+  pc.onicecandidate = e => {
+    if (e.candidate) socket.emit("signal", { room, target: id, data: { candidate: e.candidate } });
+  };
+
+  pc.ontrack = e => {
+    streams[id] = e.streams[0];
+    // If no main video yet, show this
+    if (!remoteVideo.srcObject) remoteVideo.srcObject = e.streams[0];
+    updateCameraButtons();
+  };
+}
+
+// Update camera switch buttons
+function updateCameraButtons() {
+  cameraButtonsContainer.innerHTML = "";
+  Object.entries(streams).forEach(([id, s]) => {
+    const name = Object.keys(pcs).find(k => k === id) || "Camera";
+    const btn = document.createElement("button");
+    btn.textContent = name;
+    btn.onclick = () => remoteVideo.srcObject = streams[id];
+    cameraButtonsContainer.appendChild(btn);
+  });
+}
+
+// Camera setup
+async function startCamera(localStream) {
+  const pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
+  pcs["local"] = pc;
+
+  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
 
   pc.onicecandidate = e => {
     if (e.candidate) socket.emit("signal", { room, data: { candidate: e.candidate } });
   };
 
   pc.ontrack = e => {
-    remoteVideo.srcObject = e.streams[0];
+    // Usually not needed for camera devices
   };
-}
-
-// Host setup
-function startHost() {
-  createPeerConnection();
-  socket.on("signal", async data => {
-    if (data.sdp) {
-      await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      socket.emit("signal", { room, data: { sdp: pc.localDescription } });
-    } else if (data.candidate) {
-      await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-    }
-  });
-}
-
-// Camera setup
-async function startCamera(localStream) {
-  createPeerConnection();
-  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
 
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
@@ -112,4 +132,9 @@ async function startCamera(localStream) {
     if (data.sdp) await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
     else if (data.candidate) await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
   });
+}
+
+// Host setup
+function startHost() {
+  // nothing extra here; new cameras handled in peer-joined
 }

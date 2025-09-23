@@ -57,6 +57,24 @@ h1 {
   font-weight: bold;
 }
 
+#cameraButtons {
+  margin-top: 10px;
+}
+
+#cameraButtons button {
+  margin: 3px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+  background: #1e88e5;
+  color: #fff;
+  cursor: pointer;
+}
+
+#cameraButtons button:hover {
+  background: #1565c0;
+}
+
 .video-container {
   position: relative;
   margin-top: 20px;
