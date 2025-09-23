@@ -11,22 +11,26 @@ app.use(express.static("public"));
 const rooms = {}; // { roomCode: [ { id, name, role } ] }
 
 io.on("connection", socket => {
+
   socket.on("join", ({ room, name, role }) => {
     socket.join(room);
     if (!rooms[room]) rooms[room] = [];
+    // remove old entry if rejoining
+    rooms[room] = rooms[room].filter(u => u.id !== socket.id);
     rooms[room].push({ id: socket.id, name: name || "Unknown", role: role || "camera" });
     io.to(room).emit("user-list", rooms[room]);
   });
 
-  // signal: { room, target (optional), sdp (optional), candidate (optional) }
+  // signal forwarding
+  // payload contains: { room, target (optional), sdp (optional), candidate (optional) }
   socket.on("signal", ({ room, target, sdp, candidate }) => {
-    const payload = {};
+    const payload = { from: socket.id };
     if (sdp) payload.sdp = sdp;
     if (candidate) payload.candidate = candidate;
-    payload.from = socket.id;
     if (target) {
       io.to(target).emit("signal", payload);
     } else {
+      // broadcast to everyone else in room
       socket.to(room).emit("signal", payload);
     }
   });
@@ -39,7 +43,8 @@ io.on("connection", socket => {
       }
     }
   });
+
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
