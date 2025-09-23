@@ -133,7 +133,14 @@ header h1{
   min-height:320px;
 }
 
-video{ width:100%; height:100%; object-fit:cover; display:block; background:#000; }
+video{
+  width:100%;
+  height:100%;
+  object-fit:contain; /* scales video fully without cropping */
+  display:block;
+  background:#000;
+  transition: all 0.25s ease;
+}
 
 .cam-label{
   position:absolute;
@@ -153,35 +160,19 @@ video{ width:100%; height:100%; object-fit:cover; display:block; background:#000
   justify-content:flex-end;
 }
 
-/* FNAF-style fullscreen panel */
-body.fullscreen {
-  overflow: hidden;
+/* Fullscreen adjustments */
+html:fullscreen video,
+html:-webkit-full-screen video,
+html:-ms-fullscreen video {
+  width:100vw;
+  height:100vh;
+  object-fit:contain;
 }
 
-.panel.fullscreen {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  display: grid;
-  grid-template-columns: 240px 1fr;
-  gap: 0;
-  z-index: 9999;
-  background: var(--bg);
-}
-
-.panel.fullscreen .panel-left {
-  height: 100%;
-  overflow-y: auto;
-}
-
-.panel.fullscreen .panel-right {
-  height: 100%;
-}
-
-.panel.fullscreen video {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+html:fullscreen .video-wrap,
+html:-webkit-full-screen .video-wrap,
+html:-ms-fullscreen .video-wrap {
+  border-radius:0;
+  border:0;
+  min-height:100vh;
 }
