@@ -8,7 +8,8 @@ const io = new Server(server);
 
 app.use(express.static("public"));
 
-const rooms = {}; // roomCode -> [{id, name}]
+// Keep track of rooms and connected cameras
+const rooms = {}; // { roomCode: [ {id, name} ] }
 
 io.on("connection", socket => {
   socket.on("join", ({ room, name }) => {
@@ -16,11 +17,14 @@ io.on("connection", socket => {
     if (!rooms[room]) rooms[room] = [];
     rooms[room].push({ id: socket.id, name });
     io.to(room).emit("user-list", rooms[room]);
-    socket.to(room).emit("peer-joined", { id: socket.id, name });
   });
 
-  socket.on("signal", ({ target, data }) => {
-    if (target) io.to(target).emit("signal", { from: socket.id, data });
+  socket.on("signal", ({ room, targetId, data }) => {
+    if (targetId) {
+      io.to(targetId).emit("signal", data);
+    } else {
+      socket.to(room).emit("signal", data);
+    }
   });
 
   socket.on("disconnecting", () => {

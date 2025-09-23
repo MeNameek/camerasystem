@@ -1,35 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Camera System</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Camera System</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="container">
-<h1 style="color:#ff5722;">Camera System</h1>
+  <div class="container">
+    <h1>Camera System</h1>
 
-<div id="setup">
-<input id="userName" class="input" placeholder="Enter your name">
-<button id="createBtn" class="btn">Create Lobby (PC)</button>
-<input id="joinCode" class="input" placeholder="Enter Lobby Code (Phone)">
-<button id="joinBtn" class="btn">Join as Camera</button>
-<button id="flipBtn" class="btn">Flip Camera</button>
-</div>
+    <div id="setup">
+      <input id="userName" class="input" placeholder="Enter your name">
+      <button id="createBtn" class="btn">Create Lobby (PC)</button>
+      <input id="joinCode" class="input" placeholder="Enter Lobby Code (Phone)">
+      <button id="joinBtn" class="btn">Join as Camera</button>
+      <button id="flipBtn" class="btn">Flip Camera</button>
+    </div>
 
-<p id="roomDisplay" class="room">Room not joined</p>
+    <p id="roomDisplay" class="room"></p>
 
-<ul id="userList"></ul>
-<div id="cameraButtons" style="margin-top:10px;"></div>
+    <div class="user-list-container">
+      <p>Connected Cameras:</p>
+      <div id="userList" class="user-list"></div>
+    </div>
 
-<div class="video-container">
-<video id="remoteVideo" autoplay playsinline></video>
-<button id="fullscreenBtn" class="fullscreen-btn">Fullscreen</button>
-</div>
-</div>
+    <div class="video-container">
+      <video id="remoteVideo" autoplay playsinline></video>
+      <button id="fullscreenBtn" class="fullscreen-btn">Fullscreen</button>
+    </div>
+  </div>
 
-<script src="/socket.io/socket.io.js"></script>
-<script src="client.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="client.js"></script>
 </body>
 </html>
