@@ -10,19 +10,18 @@ const userNameInput = document.getElementById("userName");
 const userList = document.getElementById("userList");
 const cameraButtonsContainer = document.getElementById("cameraButtons");
 
-let pcs = {};        // userId -> RTCPeerConnection
-let streams = {};    // userId -> MediaStream
-let localStream;
 let room;
+let localStream;
 let useFrontCamera = true;
+let pcs = {};       // host: userId -> pc
+let streams = {};   // host: userId -> MediaStream
 
 // Fullscreen
 fullscreenBtn.onclick = () => {
   if (remoteVideo.requestFullscreen) remoteVideo.requestFullscreen();
-  else if (remoteVideo.webkitRequestFullscreen) remoteVideo.webkitRequestFullscreen();
 };
 
-// Flip camera (mobile)
+// Flip camera
 flipBtn.onclick = async () => {
   if (!localStream) return;
   useFrontCamera = !useFrontCamera;
@@ -30,13 +29,12 @@ flipBtn.onclick = async () => {
     video: { facingMode: useFrontCamera ? "user" : "environment" },
     audio: false
   });
-  const videoTrack = newStream.getVideoTracks()[0];
   const sender = pcs["local"].getSenders().find(s => s.track.kind === "video");
-  sender.replaceTrack(videoTrack);
+  sender.replaceTrack(newStream.getVideoTracks()[0]);
   localStream = newStream;
 };
 
-// Create lobby (PC host)
+// Host creates lobby
 createBtn.onclick = () => {
   room = Math.random().toString(36).substring(2, 8).toUpperCase();
   roomDisplay.textContent = "Lobby Code: " + room;
@@ -44,7 +42,7 @@ createBtn.onclick = () => {
   socket.emit("join", { room, name });
 };
 
-// Join as camera (mobile)
+// Mobile joins as camera
 joinBtn.onclick = async () => {
   room = joinCode.value.trim();
   if (!room) return;
@@ -53,7 +51,6 @@ joinBtn.onclick = async () => {
 
   socket.emit("join", { room, name });
 
-  // get camera
   localStream = await navigator.mediaDevices.getUserMedia({
     video: { facingMode: useFrontCamera ? "user" : "environment" },
     audio: false
@@ -69,11 +66,8 @@ joinBtn.onclick = async () => {
   };
 
   socket.on("signal", async ({ from, data }) => {
-    if (data.sdp) {
-      await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
-    } else if (data.candidate) {
-      await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-    }
+    if (data.sdp) await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+    else if (data.candidate) await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
   });
 
   const offer = await pc.createOffer();
@@ -81,36 +75,24 @@ joinBtn.onclick = async () => {
   socket.emit("signal", { data: { sdp: pc.localDescription } });
 };
 
-// Update user list
-socket.on("user-list", users => {
-  userList.innerHTML = "";
-  users.forEach(u => {
-    const li = document.createElement("li");
-    li.textContent = u.name;
-    userList.appendChild(li);
-  });
-});
-
-// Host: new camera joined
-socket.on("peer-joined", async ({ id, name }) => {
-  const pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
-  pcs[id] = pc;
-
-  pc.onicecandidate = e => {
-    if (e.candidate) socket.emit("signal", { target: id, data: { candidate: e.candidate } });
-  };
-
-  pc.ontrack = e => {
-    streams[id] = e.streams[0];
-    if (!remoteVideo.srcObject) remoteVideo.srcObject = e.streams[0];
-    updateCameraButtons();
-  };
-});
-
-// Handle incoming signals (host)
+// Host receives new camera signal
 socket.on("signal", async ({ from, data }) => {
+  if (!pcs[from]) {
+    const pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
+    pcs[from] = pc;
+
+    pc.onicecandidate = e => {
+      if (e.candidate) socket.emit("signal", { target: from, data: { candidate: e.candidate } });
+    };
+
+    pc.ontrack = e => {
+      streams[from] = e.streams[0];
+      if (!remoteVideo.srcObject) remoteVideo.srcObject = e.streams[0];
+      updateCameraButtons();
+    };
+  }
+
   const pc = pcs[from];
-  if (!pc) return;
   if (data.sdp) {
     await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
     if (data.sdp.type === "offer") {
@@ -134,3 +116,13 @@ function updateCameraButtons() {
     cameraButtonsContainer.appendChild(btn);
   });
 }
+
+// Update user list
+socket.on("user-list", users => {
+  userList.innerHTML = "";
+  users.forEach(u => {
+    const li = document.createElement("li");
+    li.textContent = u.name;
+    userList.appendChild(li);
+  });
+});
