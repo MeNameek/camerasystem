@@ -25,12 +25,12 @@ h1 {
   border-radius: 8px;
   border: none;
   font-size: 16px;
+  cursor: pointer;
 }
 
 .btn {
   background: #1e88e5;
   color: #fff;
-  cursor: pointer;
   transition: background 0.2s;
 }
 
@@ -49,6 +49,14 @@ h1 {
   color: #ffeb3b;
 }
 
+#userList {
+  list-style: none;
+  padding: 0;
+  margin-top: 10px;
+  color: #ffeb3b;
+  font-weight: bold;
+}
+
 .video-container {
   position: relative;
   margin-top: 20px;
@@ -61,18 +69,6 @@ video {
   border-radius: 12px;
 }
 
-.local-preview {
-  position: absolute;
-  bottom: 10px;
-  left: 10px;
-  width: 120px;
-  height: 90px;
-  border: 2px solid #1e88e5;
-  border-radius: 8px;
-  object-fit: cover;
-  background: #000;
-}
-
 .fullscreen-btn {
   position: absolute;
   bottom: 10px;
@@ -82,7 +78,6 @@ video {
   border: none;
   padding: 8px 12px;
   border-radius: 8px;
-  cursor: pointer;
 }
 
 .fullscreen-btn:hover {

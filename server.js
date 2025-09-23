@@ -8,15 +8,31 @@ const io = new Server(server);
 
 app.use(express.static("public"));
 
+const rooms = {}; // { roomCode: [ {id, name} ] }
+
 io.on("connection", socket => {
-  socket.on("join", room => {
+
+  socket.on("join", ({ room, name }) => {
     socket.join(room);
-    socket.to(room).emit("peer-joined", socket.id);
+    if (!rooms[room]) rooms[room] = [];
+    rooms[room].push({ id: socket.id, name });
+    io.to(room).emit("user-list", rooms[room]);
+    socket.to(room).emit("peer-joined", { id: socket.id, name });
   });
 
   socket.on("signal", ({ room, data }) => {
     socket.to(room).emit("signal", data);
   });
+
+  socket.on("disconnecting", () => {
+    for (const room of socket.rooms) {
+      if (rooms[room]) {
+        rooms[room] = rooms[room].filter(u => u.id !== socket.id);
+        io.to(room).emit("user-list", rooms[room]);
+      }
+    }
+  });
+
 });
 
 server.listen(3000, () => console.log("Server running on http://localhost:3000"));

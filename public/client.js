@@ -4,11 +4,15 @@ const joinBtn = document.getElementById("joinBtn");
 const joinCode = document.getElementById("joinCode");
 const roomDisplay = document.getElementById("roomDisplay");
 const remoteVideo = document.getElementById("remoteVideo");
-const localVideo = document.getElementById("localVideo");
 const fullscreenBtn = document.getElementById("fullscreenBtn");
+const flipBtn = document.getElementById("flipBtn");
+const userNameInput = document.getElementById("userName");
+const userList = document.getElementById("userList");
 
 let pc;
 let room;
+let stream;
+let useFrontCamera = true;
 
 // Fullscreen button
 fullscreenBtn.onclick = () => {
@@ -17,30 +21,54 @@ fullscreenBtn.onclick = () => {
   else if (remoteVideo.msRequestFullscreen) remoteVideo.msRequestFullscreen();
 };
 
-// Host (PC) creates lobby
+// Flip camera button
+flipBtn.onclick = async () => {
+  if (!stream) return;
+  useFrontCamera = !useFrontCamera;
+  const newStream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: useFrontCamera ? "user" : "environment" },
+    audio: false
+  });
+  const videoTrack = newStream.getVideoTracks()[0];
+  const sender = pc.getSenders().find(s => s.track.kind === "video");
+  sender.replaceTrack(videoTrack);
+  stream = newStream;
+};
+
+// Create Lobby (PC)
 createBtn.onclick = () => {
   room = Math.random().toString(36).substring(2, 8).toUpperCase();
   roomDisplay.textContent = "Lobby Code: " + room;
-  socket.emit("join", room);
+  const name = userNameInput.value.trim() || "Host";
+  socket.emit("join", { room, name });
   startHost();
 };
 
-// Camera (Phone) joins
+// Join as Camera (Mobile)
 joinBtn.onclick = async () => {
   room = joinCode.value.trim();
   if (!room) return;
   roomDisplay.textContent = "Joined room: " + room;
-  socket.emit("join", room);
+  const name = userNameInput.value.trim() || "Camera";
+  socket.emit("join", { room, name });
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-    localVideo.srcObject = stream;
-    localVideo.style.display = "block"; // small preview
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: useFrontCamera ? "user" : "environment" }, audio: false });
     startCamera(stream);
   } catch (err) {
     alert("Camera access denied or failed: " + err.message);
     console.error(err);
   }
 };
+
+// Update user list on host
+socket.on("user-list", users => {
+  userList.innerHTML = "";
+  users.forEach(u => {
+    const li = document.createElement("li");
+    li.textContent = u.name;
+    userList.appendChild(li);
+  });
+});
 
 // Create peer connection
 function createPeerConnection() {
@@ -72,9 +100,9 @@ function startHost() {
 }
 
 // Camera setup
-async function startCamera(stream) {
+async function startCamera(localStream) {
   createPeerConnection();
-  stream.getTracks().forEach(track => pc.addTrack(track, stream));
+  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
 
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);

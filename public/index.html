@@ -9,18 +9,25 @@
 <body>
   <div class="container">
     <h1>Camera System</h1>
+
     <div id="setup">
+      <input id="userName" class="input" placeholder="Enter your name">
       <button id="createBtn" class="btn">Create Lobby (PC)</button>
       <input id="joinCode" class="input" placeholder="Enter Lobby Code (Phone)">
       <button id="joinBtn" class="btn">Join as Camera</button>
+      <button id="flipBtn" class="btn">Flip Camera</button>
     </div>
+
     <p id="roomDisplay" class="room"></p>
+
+    <ul id="userList"></ul>
+
     <div class="video-container">
       <video id="remoteVideo" autoplay playsinline></video>
-      <video id="localVideo" autoplay muted playsinline class="local-preview"></video>
       <button id="fullscreenBtn" class="fullscreen-btn">Fullscreen</button>
     </div>
   </div>
+
   <script src="/socket.io/socket.io.js"></script>
   <script src="client.js"></script>
 </body>
