@@ -9,21 +9,18 @@
 <body>
   <div class="container">
     <h1>Camera Lobby</h1>
-
     <div id="setup">
       <button id="createBtn" class="btn">Create Lobby</button>
       <input id="joinCode" class="input" placeholder="Enter code">
       <button id="joinBtn" class="btn">Join as Camera</button>
     </div>
-
     <p id="roomDisplay" class="room"></p>
-
     <div class="video-container">
       <video id="remoteVideo" autoplay playsinline></video>
+      <video id="localVideo" autoplay muted playsinline class="local-preview"></video>
       <button id="fullscreenBtn" class="fullscreen-btn">Fullscreen</button>
     </div>
   </div>
-
   <script src="/socket.io/socket.io.js"></script>
   <script src="client.js"></script>
 </body>

@@ -4,6 +4,7 @@ const joinBtn = document.getElementById("joinBtn");
 const joinCode = document.getElementById("joinCode");
 const roomDisplay = document.getElementById("roomDisplay");
 const remoteVideo = document.getElementById("remoteVideo");
+const localVideo = document.getElementById("localVideo");
 const fullscreenBtn = document.getElementById("fullscreenBtn");
 
 let pc;
@@ -28,13 +29,12 @@ createBtn.onclick = () => {
 joinBtn.onclick = async () => {
   room = joinCode.value.trim();
   if (!room) return;
-
   roomDisplay.textContent = "Joined room: " + room;
   socket.emit("join", room);
-
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-    remoteVideo.srcObject = stream;
+    localVideo.srcObject = stream;
+    localVideo.style.display = "block"; // show small preview on device
     startCamera(stream);
   } catch (err) {
     alert("Camera access denied or failed: " + err.message);
@@ -46,11 +46,9 @@ joinBtn.onclick = async () => {
 function createPeerConnection() {
   const config = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
   pc = new RTCPeerConnection(config);
-
   pc.onicecandidate = e => {
     if (e.candidate) socket.emit("signal", { room, data: { candidate: e.candidate } });
   };
-
   pc.ontrack = e => {
     remoteVideo.srcObject = e.streams[0];
   };
@@ -59,7 +57,6 @@ function createPeerConnection() {
 // Host setup
 function startHost() {
   createPeerConnection();
-
   socket.on("signal", async data => {
     if (data.sdp) {
       await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
@@ -76,11 +73,9 @@ function startHost() {
 async function startCamera(stream) {
   createPeerConnection();
   stream.getTracks().forEach(track => pc.addTrack(track, stream));
-
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
   socket.emit("signal", { room, data: { sdp: pc.localDescription } });
-
   socket.on("signal", async data => {
     if (data.sdp) await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
     else if (data.candidate) await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
