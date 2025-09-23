@@ -10,11 +10,11 @@ const userNameInput = document.getElementById("userName");
 const userList = document.getElementById("userList");
 const cameraButtonsContainer = document.getElementById("cameraButtons");
 
-let room;
+let pcs = {};        // id -> RTCPeerConnection
+let streams = {};    // id -> MediaStream
 let localStream;
+let room;
 let useFrontCamera = true;
-let pcs = {};       // host: userId -> pc
-let streams = {};   // host: userId -> MediaStream
 
 // Fullscreen
 fullscreenBtn.onclick = () => {
@@ -42,7 +42,7 @@ createBtn.onclick = () => {
   socket.emit("join", { room, name });
 };
 
-// Mobile joins as camera
+// Camera joins lobby
 joinBtn.onclick = async () => {
   room = joinCode.value.trim();
   if (!room) return;
@@ -75,24 +75,27 @@ joinBtn.onclick = async () => {
   socket.emit("signal", { data: { sdp: pc.localDescription } });
 };
 
-// Host receives new camera signal
+// Host: new camera joined
+socket.on("peer-joined", async ({ id, name }) => {
+  const pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
+  pcs[id] = pc;
+
+  pc.onicecandidate = e => {
+    if (e.candidate) socket.emit("signal", { target: id, data: { candidate: e.candidate } });
+  };
+
+  pc.ontrack = e => {
+    streams[id] = e.streams[0];
+    if (!remoteVideo.srcObject) remoteVideo.srcObject = e.streams[0];
+    updateCameraButtons();
+  };
+});
+
+// Host: handle incoming signals
 socket.on("signal", async ({ from, data }) => {
-  if (!pcs[from]) {
-    const pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
-    pcs[from] = pc;
-
-    pc.onicecandidate = e => {
-      if (e.candidate) socket.emit("signal", { target: from, data: { candidate: e.candidate } });
-    };
-
-    pc.ontrack = e => {
-      streams[from] = e.streams[0];
-      if (!remoteVideo.srcObject) remoteVideo.srcObject = e.streams[0];
-      updateCameraButtons();
-    };
-  }
-
+  if (!pcs[from]) return;
   const pc = pcs[from];
+
   if (data.sdp) {
     await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
     if (data.sdp.type === "offer") {

@@ -8,15 +8,15 @@ const io = new Server(server);
 
 app.use(express.static("public"));
 
-const rooms = {}; // roomCode -> array of {id, name}
+const rooms = {}; // roomCode -> [{id, name}]
 
 io.on("connection", socket => {
-
   socket.on("join", ({ room, name }) => {
     socket.join(room);
     if (!rooms[room]) rooms[room] = [];
     rooms[room].push({ id: socket.id, name });
     io.to(room).emit("user-list", rooms[room]);
+    socket.to(room).emit("peer-joined", { id: socket.id, name });
   });
 
   socket.on("signal", ({ target, data }) => {
@@ -31,7 +31,6 @@ io.on("connection", socket => {
       }
     }
   });
-
 });
 
 server.listen(3000, () => console.log("Server running on http://localhost:3000"));
