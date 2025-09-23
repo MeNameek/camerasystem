@@ -20,7 +20,6 @@ let useFrontCamera = true;
 fullscreenBtn.onclick = () => {
   if (remoteVideo.requestFullscreen) remoteVideo.requestFullscreen();
   else if (remoteVideo.webkitRequestFullscreen) remoteVideo.webkitRequestFullscreen();
-  else if (remoteVideo.msRequestFullscreen) remoteVideo.msRequestFullscreen();
 };
 
 // Flip camera (mobile)
@@ -103,7 +102,6 @@ socket.on("peer-joined", async ({ id, name }) => {
 
   pc.ontrack = e => {
     streams[id] = e.streams[0];
-    // if no main video yet, show first camera
     if (!remoteVideo.srcObject) remoteVideo.srcObject = e.streams[0];
     updateCameraButtons();
   };
@@ -128,10 +126,11 @@ socket.on("signal", async ({ from, data }) => {
 // Update camera switch buttons
 function updateCameraButtons() {
   cameraButtonsContainer.innerHTML = "";
-  Object.entries(streams).forEach(([id, s]) => {
+  Object.entries(streams).forEach(([id, s], i) => {
+    const name = userList.children[i]?.textContent || "Camera";
     const btn = document.createElement("button");
-    btn.textContent = userList.querySelector(`li:nth-child(${Object.keys(streams).indexOf(id)+1})`)?.textContent || "Camera";
-    btn.onclick = () => remoteVideo.srcObject = streams[id];
+    btn.textContent = name;
+    btn.onclick = () => remoteVideo.srcObject = s;
     cameraButtonsContainer.appendChild(btn);
   });
 }

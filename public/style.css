@@ -1,8 +1,8 @@
 body {
   margin: 0;
-  font-family: "Segoe UI", sans-serif;
-  background: #121212;
-  color: #eee;
+  font-family: "Arial", sans-serif;
+  background: #1a1a1a;
+  color: #00ff99;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -11,68 +11,72 @@ body {
 
 .container {
   width: 95%;
-  max-width: 600px;
+  max-width: 650px;
   text-align: center;
+  background: #222;
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 0 20px #00ff99;
 }
 
 h1 {
   margin-bottom: 20px;
+  text-shadow: 0 0 10px #ff5722;
 }
 
 .btn, .input {
   padding: 12px 20px;
   margin: 10px 5px;
-  border-radius: 8px;
+  border-radius: 10px;
   border: none;
   font-size: 16px;
   cursor: pointer;
 }
 
 .btn {
-  background: #1e88e5;
+  background: #ff5722;
   color: #fff;
-  transition: background 0.2s;
+  font-weight: bold;
+  transition: 0.2s;
 }
 
 .btn:hover {
-  background: #1565c0;
+  background: #e64a19;
 }
 
 .input {
   width: 60%;
-  max-width: 200px;
+  max-width: 220px;
+  background: #333;
+  color: #00ff99;
 }
 
 .room {
   margin-top: 15px;
   font-weight: bold;
-  color: #ffeb3b;
+  color: #00ffcc;
 }
 
 #userList {
   list-style: none;
   padding: 0;
   margin-top: 10px;
-  color: #ffeb3b;
+  color: #00ffcc;
   font-weight: bold;
-}
-
-#cameraButtons {
-  margin-top: 10px;
 }
 
 #cameraButtons button {
   margin: 3px;
   padding: 6px 12px;
-  border-radius: 6px;
+  border-radius: 8px;
   border: none;
-  background: #1e88e5;
+  background: #ff5722;
   color: #fff;
   cursor: pointer;
 }
 
 #cameraButtons button:hover {
-  background: #1565c0;
+  background: #e64a19;
 }
 
 .video-container {
@@ -84,20 +88,22 @@ video {
   width: 100%;
   max-height: 70vh;
   background: #000;
-  border-radius: 12px;
+  border-radius: 15px;
+  box-shadow: 0 0 15px #00ff99;
 }
 
 .fullscreen-btn {
   position: absolute;
   bottom: 10px;
   right: 10px;
-  background: rgba(30, 136, 229, 0.8);
+  background: rgba(255, 87, 34, 0.8);
   color: #fff;
   border: none;
   padding: 8px 12px;
   border-radius: 8px;
+  font-weight: bold;
 }
 
 .fullscreen-btn:hover {
-  background: rgba(21, 101, 192, 0.9);
+  background: rgba(230, 74, 25, 0.9);
 }
