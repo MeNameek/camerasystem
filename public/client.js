@@ -4,36 +4,62 @@ const joinBtn = document.getElementById("joinBtn");
 const joinCode = document.getElementById("joinCode");
 const roomDisplay = document.getElementById("roomDisplay");
 const remoteVideo = document.getElementById("remoteVideo");
+const fullscreenBtn = document.getElementById("fullscreenBtn");
 
 let pc;
 let room;
 
+// Fullscreen button
+fullscreenBtn.onclick = () => {
+  if (remoteVideo.requestFullscreen) remoteVideo.requestFullscreen();
+  else if (remoteVideo.webkitRequestFullscreen) remoteVideo.webkitRequestFullscreen();
+  else if (remoteVideo.msRequestFullscreen) remoteVideo.msRequestFullscreen();
+};
+
+// Create Lobby (Host)
 createBtn.onclick = () => {
-  room = Math.random().toString(36).substring(2, 8);
+  room = Math.random().toString(36).substring(2, 8).toUpperCase();
   roomDisplay.textContent = "Lobby Code: " + room;
   socket.emit("join", room);
   startHost();
 };
 
+// Join as Camera
 joinBtn.onclick = async () => {
   room = joinCode.value.trim();
   if (!room) return;
+
   roomDisplay.textContent = "Joined room: " + room;
   socket.emit("join", room);
-  startCamera();
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    remoteVideo.srcObject = stream;
+    startCamera(stream);
+  } catch (err) {
+    alert("Camera access denied or failed: " + err.message);
+    console.error(err);
+  }
 };
 
+// Peer connection setup
 function createPeerConnection() {
   const config = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
   pc = new RTCPeerConnection(config);
+
   pc.onicecandidate = e => {
     if (e.candidate) socket.emit("signal", { room, data: { candidate: e.candidate } });
   };
-  pc.ontrack = e => remoteVideo.srcObject = e.streams[0];
+
+  pc.ontrack = e => {
+    remoteVideo.srcObject = e.streams[0];
+  };
 }
 
-async function startHost() {
+// Host setup
+function startHost() {
   createPeerConnection();
+
   socket.on("signal", async data => {
     if (data.sdp) {
       await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
@@ -46,9 +72,9 @@ async function startHost() {
   });
 }
 
-async function startCamera() {
+// Camera setup
+async function startCamera(stream) {
   createPeerConnection();
-  const stream = await navigator.mediaDevices.getUserMedia({ video: true });
   stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
   const offer = await pc.createOffer();

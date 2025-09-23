@@ -1,21 +1,28 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Camera Lobby</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Camera Lobby</h1>
+  <div class="container">
+    <h1>Camera Lobby</h1>
 
-  <div id="setup">
-    <button id="createBtn">Create Lobby</button>
-    <input id="joinCode" placeholder="Enter code">
-    <button id="joinBtn">Join as Camera</button>
+    <div id="setup">
+      <button id="createBtn" class="btn">Create Lobby</button>
+      <input id="joinCode" class="input" placeholder="Enter code">
+      <button id="joinBtn" class="btn">Join as Camera</button>
+    </div>
+
+    <p id="roomDisplay" class="room"></p>
+
+    <div class="video-container">
+      <video id="remoteVideo" autoplay playsinline></video>
+      <button id="fullscreenBtn" class="fullscreen-btn">Fullscreen</button>
+    </div>
   </div>
-
-  <p id="roomDisplay"></p>
-  <video id="remoteVideo" autoplay playsinline></video>
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="client.js"></script>
