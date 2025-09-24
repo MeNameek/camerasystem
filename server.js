@@ -1,45 +1,44 @@
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
-
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
 app.use(express.static("public"));
 
-const rooms = {}; // { roomCode: [ { id, name, role } ] }
+let cameras = {}; // { socket.id : { name, isCamera } }
 
 io.on("connection", socket => {
-  socket.on("join", ({ room, name, role }) => {
-    socket.join(room);
-    if (!rooms[room]) rooms[room] = [];
-    rooms[room].push({ id: socket.id, name: name || "Unknown", role: role || "camera" });
-    io.to(room).emit("user-list", rooms[room]);
+  socket.on("join", ({ name, isCamera }) => {
+    cameras[socket.id] = { name, isCamera };
+    io.emit("cameraList", getCameraList());
   });
 
-  // signal: { room, target (optional), sdp (optional), candidate (optional) }
-  socket.on("signal", ({ room, target, sdp, candidate }) => {
-    const payload = {};
-    if (sdp) payload.sdp = sdp;
-    if (candidate) payload.candidate = candidate;
-    payload.from = socket.id;
-    if (target) {
-      io.to(target).emit("signal", payload);
-    } else {
-      socket.to(room).emit("signal", payload);
-    }
-  });
+  socket.on("offer", ({ target, offer, name }) =>
+    io.to(target).emit("offer", { from: socket.id, offer, name })
+  );
 
-  socket.on("disconnecting", () => {
-    for (const r of socket.rooms) {
-      if (rooms[r]) {
-        rooms[r] = rooms[r].filter(u => u.id !== socket.id);
-        io.to(r).emit("user-list", rooms[r]);
-      }
-    }
+  socket.on("answer", ({ target, answer }) =>
+    io.to(target).emit("answer", { from: socket.id, answer })
+  );
+
+  socket.on("ice-candidate", ({ target, candidate }) =>
+    io.to(target).emit("ice-candidate", { from: socket.id, candidate })
+  );
+
+  socket.on("disconnect", () => {
+    delete cameras[socket.id];
+    io.emit("cameraList", getCameraList());
   });
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+function getCameraList() {
+  let list = [];
+  for (let id in cameras) {
+    if (cameras[id].isCamera) list.push({ id, name: cameras[id].name });
+  }
+  return list;
+}
+
+server.listen(3000, () => console.log("Server running on http://localhost:3000"));

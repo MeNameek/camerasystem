@@ -1,212 +1,63 @@
-:root{
-  --bg:#0b0f13;
-  --card:#0f1720;
-  --accent:#e85a4f;
-  --accent-2:#1e88e5;
-  --muted:#9aa6b2;
-  --text:#e6eef3;
+body {
+  margin: 0;
+  background: #111;
+  color: #fff;
+  font-family: Arial, sans-serif;
+}
+.center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+.hidden { display: none; }
+
+.fnaf-layout {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
 }
 
-*{box-sizing:border-box}
-body{
-  margin:0;
-  background:var(--bg);
-  color:var(--text);
-  font-family:Inter,Segoe UI,Helvetica,Arial,sans-serif;
-  -webkit-font-smoothing:antialiased;
-  -moz-osx-font-smoothing:grayscale;
+#cameraSidebar {
+  width: 220px;
+  background: #222;
+  padding: 10px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.app{
-  max-width:1200px;
-  margin:20px auto;
-  padding:18px;
+#cameraSidebar h3 {
+  margin: 0 0 10px 0;
+  text-align: center;
 }
 
-header h1{
-  margin:0 0 12px 0;
-  color:var(--accent-2);
-  font-size:22px;
-  letter-spacing:0.5px;
+#cameraButtons button {
+  width: 100%;
+  padding: 10px;
+  background: #444;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  border-radius: 4px;
+}
+#cameraButtons button.active {
+  background: #0a84ff;
 }
 
-.controls{
-  display:flex;
-  gap:10px;
-  align-items:center;
-  flex-wrap:wrap;
-  margin-bottom:18px;
+#cameraView {
+  flex: 1;
+  position: relative;
+  background: black;
 }
 
-.input{
-  background:var(--card);
-  border:1px solid rgba(255,255,255,0.03);
-  color:var(--text);
-  padding:10px 12px;
-  border-radius:8px;
-  min-width:160px;
-}
-
-.btn{
-  background:#111418;
-  color:var(--text);
-  border:1px solid rgba(255,255,255,0.04);
-  padding:10px 14px;
-  border-radius:8px;
-  cursor:pointer;
-  transition:all .12s ease;
-}
-
-.btn.primary{
-  background:linear-gradient(90deg,var(--accent-2),#1572c6);
-  border:0;
-  color:#fff;
-}
-
-.btn:hover{ transform:translateY(-2px); box-shadow:0 6px 18px rgba(0,0,0,0.6); }
-
-.join-row{ display:flex; gap:10px; align-items:center; }
-
-.small-controls{ display:flex; gap:8px; align-items:center; }
-
-.room{ margin:6px 0 0 0; color:var(--muted); font-weight:600; }
-
-.panel{
-  display:grid;
-  grid-template-columns:320px 1fr;
-  gap:18px;
-  margin-top:12px;
-  align-items:start;
-}
-
-.panel-left{
-  background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-  padding:12px;
-  border-radius:10px;
-  border:1px solid rgba(255,255,255,0.03);
-  min-height:320px;
-  max-height: calc(100vh - 160px);
-  overflow:auto;
-}
-
-.panel-left h3{ margin:0 0 8px 0; color:var(--muted); font-size:14px; }
-
-.camera-grid{
-  display:grid;
-  grid-template-columns:1fr;
-  gap:8px;
-  margin-top:8px;
-}
-
-.camera-btn{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:8px;
-  padding:10px 12px;
-  border-radius:8px;
-  background:#071018;
-  color:var(--text);
-  border:1px solid rgba(255,255,255,0.03);
-  cursor:pointer;
-}
-
-.camera-btn.active{
-  background:linear-gradient(90deg, rgba(232,90,85,0.14), rgba(30,136,229,0.12));
-  border:1px solid rgba(232,90,85,0.25);
-  color:var(--text);
-  box-shadow:0 8px 30px rgba(0,0,0,0.6);
-}
-
-.camera-name{ font-weight:700; color:var(--text); }
-.camera-id{ font-size:12px; color:var(--muted); margin-left:8px; }
-
-.panel-right{
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-  min-height:320px;
-}
-
-.video-wrap{
-  position:relative;
-  background:#000;
-  border-radius:12px;
-  overflow:hidden;
-  border:1px solid rgba(255,255,255,0.03);
-  min-height:320px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-
-video{
-  width:100%;
-  height:100%;
-  object-fit:contain; /* normal mode shows entire frame */
-  display:block;
-  background:#000;
-  transition: all 0.2s ease;
-}
-
-.cam-label{
-  position:absolute;
-  left:12px;
-  top:12px;
-  background:rgba(0,0,0,0.45);
-  color:var(--text);
-  padding:6px 10px;
-  border-radius:8px;
-  font-weight:700;
-  font-size:14px;
-  z-index:2;
-}
-
-.video-actions{
-  display:flex;
-  gap:10px;
-  justify-content:flex-end;
-}
-
-/* FULLSCREEN MODE: whole app goes fullscreen and video is cropped to fill right area */
-:fullscreen .panel,
-:-webkit-full-screen .panel,
-:-ms-fullscreen .panel {
-  grid-template-columns:320px 1fr;
-  height:100vh;
-}
-
-/* make right panel fill vertically */
-:fullscreen .panel-right,
-:-webkit-full-screen .panel-right,
-:-ms-fullscreen .panel-right {
-  height:100vh;
-}
-
-/* crop video in fullscreen so it fills the right area
-   This makes it feel like FNAF camera feed: fills available area possibly cropping edges */
-:fullscreen video,
-:-webkit-full-screen video,
-:-ms-fullscreen video {
-  object-fit:cover;
-  width:100%;
-  height:100%;
-}
-
-/* keep left panel visible and scrollable in fullscreen */
-:fullscreen .panel-left,
-:-webkit-full-screen .panel-left,
-:-ms-fullscreen .panel-left {
-  overflow:auto;
-  background:rgba(10,12,15,0.95);
-}
-
-/* active camera button visual */
-.camera-btn.active { outline: 2px solid rgba(30,136,229,0.18); transform: translateY(-2px); }
-
-/* responsive */
-@media (max-width:800px){
-  .panel{ grid-template-columns: 1fr; }
-  .panel-left{ order:2; max-height:none; }
-  .panel-right{ order:1; }
+#remoteVideo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* fills area cropped like FNAF */
+  background: black;
 }
