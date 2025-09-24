@@ -18,8 +18,8 @@ body{
 }
 
 .app{
-  max-width:1100px;
-  margin:28px auto;
+  max-width:1200px;
+  margin:20px auto;
   padding:18px;
 }
 
@@ -76,6 +76,7 @@ header h1{
   grid-template-columns:320px 1fr;
   gap:18px;
   margin-top:12px;
+  align-items:start;
 }
 
 .panel-left{
@@ -84,6 +85,8 @@ header h1{
   border-radius:10px;
   border:1px solid rgba(255,255,255,0.03);
   min-height:320px;
+  max-height: calc(100vh - 160px);
+  overflow:auto;
 }
 
 .panel-left h3{ margin:0 0 8px 0; color:var(--muted); font-size:14px; }
@@ -122,6 +125,7 @@ header h1{
   display:flex;
   flex-direction:column;
   gap:12px;
+  min-height:320px;
 }
 
 .video-wrap{
@@ -131,15 +135,18 @@ header h1{
   overflow:hidden;
   border:1px solid rgba(255,255,255,0.03);
   min-height:320px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
 }
 
 video{
   width:100%;
   height:100%;
-  object-fit:contain; /* scales video fully without cropping */
+  object-fit:contain; /* normal mode shows entire frame */
   display:block;
   background:#000;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
 }
 
 .cam-label{
@@ -152,6 +159,7 @@ video{
   border-radius:8px;
   font-weight:700;
   font-size:14px;
+  z-index:2;
 }
 
 .video-actions{
@@ -160,19 +168,45 @@ video{
   justify-content:flex-end;
 }
 
-/* Fullscreen adjustments */
-html:fullscreen video,
-html:-webkit-full-screen video,
-html:-ms-fullscreen video {
-  width:100vw;
+/* FULLSCREEN MODE: whole app goes fullscreen and video is cropped to fill right area */
+:fullscreen .panel,
+:-webkit-full-screen .panel,
+:-ms-fullscreen .panel {
+  grid-template-columns:320px 1fr;
   height:100vh;
-  object-fit:contain;
 }
 
-html:fullscreen .video-wrap,
-html:-webkit-full-screen .video-wrap,
-html:-ms-fullscreen .video-wrap {
-  border-radius:0;
-  border:0;
-  min-height:100vh;
+/* make right panel fill vertically */
+:fullscreen .panel-right,
+:-webkit-full-screen .panel-right,
+:-ms-fullscreen .panel-right {
+  height:100vh;
+}
+
+/* crop video in fullscreen so it fills the right area
+   This makes it feel like FNAF camera feed: fills available area possibly cropping edges */
+:fullscreen video,
+:-webkit-full-screen video,
+:-ms-fullscreen video {
+  object-fit:cover;
+  width:100%;
+  height:100%;
+}
+
+/* keep left panel visible and scrollable in fullscreen */
+:fullscreen .panel-left,
+:-webkit-full-screen .panel-left,
+:-ms-fullscreen .panel-left {
+  overflow:auto;
+  background:rgba(10,12,15,0.95);
+}
+
+/* active camera button visual */
+.camera-btn.active { outline: 2px solid rgba(30,136,229,0.18); transform: translateY(-2px); }
+
+/* responsive */
+@media (max-width:800px){
+  .panel{ grid-template-columns: 1fr; }
+  .panel-left{ order:2; max-height:none; }
+  .panel-right{ order:1; }
 }
