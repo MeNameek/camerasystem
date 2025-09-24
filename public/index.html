@@ -1,27 +1,52 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>FNAF Camera System</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Camera System</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="joinScreen" class="center">
-    <h2>Join Lobby</h2>
-    <input id="name" placeholder="Enter Name">
-    <button id="joinHost">Join as Host</button>
-    <button id="joinCamera">Join as Camera</button>
-    <button id="flipBtn" style="display:none">Flip Camera</button>
-  </div>
+  <div class="app">
+    <header>
+      <h1>Camera Control</h1>
+    </header>
 
-  <div id="hostScreen" class="fnaf-layout hidden">
-    <div id="cameraSidebar">
-      <h3>Cameras</h3>
-      <div id="cameraButtons"></div>
-    </div>
-    <div id="cameraView">
-      <video id="remoteVideo" autoplay playsinline></video>
-    </div>
+    <section class="controls">
+      <input id="userName" class="input" placeholder="Your name" />
+      <button id="createBtn" class="btn primary">Create Lobby (host)</button>
+
+      <div class="join-row">
+        <input id="joinCode" class="input" placeholder="Lobby code" />
+        <button id="joinBtn" class="btn">Join as Camera</button>
+      </div>
+
+      <div class="small-controls">
+        <button id="flipBtn" class="btn">Flip Camera</button>
+        <button id="copyCodeBtn" class="btn">Copy Code</button>
+      </div>
+
+      <p id="roomDisplay" class="room"></p>
+    </section>
+
+    <section class="panel">
+      <div id="fullscreenWrapper" class="fullscreen-wrap">
+        <div class="video-side">
+          <div class="video-wrap">
+            <video id="remoteVideo" autoplay playsinline></video>
+            <div id="camLabel" class="cam-label">No camera selected</div>
+          </div>
+          <div class="video-actions">
+            <button id="prevBtn" class="btn">Prev</button>
+            <button id="nextBtn" class="btn">Next</button>
+            <button id="fullscreenBtn" class="btn primary">Fullscreen</button>
+          </div>
+        </div>
+        <div id="sideList" class="side-list">
+          <div id="userList" class="camera-grid"></div>
+        </div>
+      </div>
+    </section>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
